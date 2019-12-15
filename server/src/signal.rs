@@ -1,29 +1,25 @@
 use uuid::Uuid;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use ws::listen;
-use ws::Message;
+use ws::CloseCode;
 use ws::Sender;
 
 lazy_static! {
     static ref CLIENTS: Mutex<HashMap<String, Sender>> = Mutex::new(HashMap::new());
 }
 
-pub fn signalling_server() {
-    // TODO: encrypt comms with wss
-    let server = listen("0.0.0.0:3012", |out| {
-        let id = Uuid::new_v4().to_simple().to_string();
 
-        out.send(id.clone()).unwrap();
-        println!("Saw {}", id.clone());
-        CLIENTS.lock().unwrap().insert(id.clone(), out);
+struct Server {
+    id: String,
+}
 
-        move |msg: Message| {
+impl ws::Handler for Server {
+    fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
             println!("{}", msg);
             let mut toks = msg.as_text()?.splitn(4, ' ');
             let verb = toks.next().unwrap();
             let source_id = toks.next().unwrap();
-            if source_id != id {
+            if source_id != self.id {
                 return Ok(())
             }
             let target_id = toks.next().unwrap();
@@ -36,10 +32,24 @@ pub fn signalling_server() {
                 _ => {}
             }
             Ok(())
-        }
-    });
-
-    if let Err(error) = server {
-        println!("Failed to create WebSocket due to {:?}", error);
     }
+    fn on_close(&mut self, _code: CloseCode, _reason: &str) {
+        CLIENTS.lock().unwrap().remove(&self.id);
+    }
+}
+
+
+pub fn signalling_server() {
+    ws::Builder::new()
+        .build(|out: ws::Sender| {
+            let id = Uuid::new_v4().to_simple().to_string();
+
+            out.send(id.clone()).unwrap();
+            println!("Saw {}", id.clone());
+            CLIENTS.lock().unwrap().insert(id.clone(), out);
+           Server { id }
+        })
+        .unwrap()
+        .listen("0.0.0.0:3012")
+        .unwrap();
 }
