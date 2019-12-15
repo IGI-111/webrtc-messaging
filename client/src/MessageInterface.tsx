@@ -1,17 +1,5 @@
 import React, { KeyboardEvent, ChangeEvent, Component } from 'react'
 
-function getSignalWebSocket(): Promise<WebSocket> {
-  return new Promise(function(resolve, reject) {
-    const server = new WebSocket('ws://127.0.0.1:3012')
-    server.onopen = () => {
-      resolve(server)
-    }
-    server.onerror = err => {
-      reject(err)
-    }
-  })
-}
-
 class MessageInterface extends Component<
   {
     onSend: (message: string) => void
