@@ -3,7 +3,7 @@ import MessageInterface from './MessageInterface'
 
 function getSignalWebSocket(): Promise<WebSocket> {
   return new Promise(function(resolve, reject) {
-    const server = new WebSocket('ws://127.0.0.1:3012')
+    const server = new WebSocket('ws://vps514782.ovh.net:3012')
     server.onopen = () => {
       resolve(server)
     }
@@ -29,7 +29,9 @@ class App extends Component<
   constructor(props: {}) {
     super(props)
 
-    const conn = new RTCPeerConnection()
+    const conn = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:vps514782.ovh.net' }],
+    })
 
     this.state = {
       messageHistory: [],
@@ -56,6 +58,8 @@ class App extends Component<
     conn.ondatachannel = (e: RTCDataChannelEvent) => {
       const dataChannel = e.channel
       dataChannel.onmessage = this.receiveMessage
+      dataChannel.onopen = () =>
+        this.setState({ connectedTo: this.state.connectingTo })
       this.setState({ dataChannel })
     }
 
@@ -84,8 +88,6 @@ class App extends Component<
               const answer = await conn.createAnswer()
               await conn.setLocalDescription(answer)
               sock.send(`ANSWER ${id} ${source} ${JSON.stringify(answer)}`)
-
-              this.setState({ connectedTo: source }) //dataChannel })
             })
             break
           }
@@ -93,8 +95,6 @@ class App extends Component<
             const sdp = JSON.parse(arg)
             const remote = new RTCSessionDescription(sdp)
             await conn.setRemoteDescription(remote)
-
-            this.setState({ connectedTo: source }) //dataChannel })
             break
           }
           case 'ICE': {
@@ -122,6 +122,8 @@ class App extends Component<
 
       const dataChannel = conn.createDataChannel('DATACHANNEL')
       dataChannel.onmessage = this.receiveMessage
+      dataChannel.onopen = () =>
+        this.setState({ connectedTo: this.state.connectingTo })
       this.setState({ dataChannel })
 
       if (!sock) {
