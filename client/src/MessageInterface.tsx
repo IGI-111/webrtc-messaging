@@ -25,8 +25,10 @@ class MessageInterface extends Component<
   }
 
   sendMessage = () => {
-    this.props.onSend(this.state.message)
-    this.setState({ message: '' })
+    if(this.state.message !== '') {
+      this.props.onSend(this.state.message)
+      this.setState({ message: '' })
+    }
   }
 
   render() {

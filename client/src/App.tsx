@@ -83,6 +83,7 @@ class App extends Component<
         <div className="App">
           {id && <span>You are {id}</span>}
           <div>
+            <label> Connect to </label>
             <input
               onChange={this.setConnectionTarget}
               onKeyPress={(e: KeyboardEvent<HTMLInputElement>) => {
