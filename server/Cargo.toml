@@ -5,9 +5,9 @@ authors = ["IGI-111 <igi-111@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = "0.7.2"
 lazy_static = "1.4.0"
-
-[dependencies.ws]
-version = "*"
-features = ["ssl"]
+uuid = { version = "0.8.1", features = ["v4"] }
+ws = { version = "*", features = ["ssl"]}
+rustun = "0.3.5"
+fibers_global = "0.1.2"
+openssl = { version = "0.10.26", features = ["vendored"] }
