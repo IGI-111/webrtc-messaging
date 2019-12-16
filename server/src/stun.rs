@@ -5,8 +5,8 @@ pub fn stun_server() {
     let server = fibers_global::execute(UdpServer::start(
         fibers_global::handle(),
         addr,
-        BindingHandler
-    )).unwrap();
+        BindingHandler,
+    ))
+    .unwrap();
     fibers_global::execute(server).unwrap();
 }
-

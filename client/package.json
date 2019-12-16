@@ -17,6 +17,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "docs": "yarn typedoc",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -37,6 +38,7 @@
     ]
   },
   "devDependencies": {
-    "prettier": "1.19.1"
+    "prettier": "1.19.1",
+    "typedoc": "^0.15.5"
   }
 }

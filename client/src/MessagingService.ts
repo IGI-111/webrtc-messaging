@@ -1,31 +1,46 @@
-const BACKEND_ADDRESS = 'vps514782.ovh.net'
-const SIGNAL_PORT = '3012'
+import config from './config.json'
 
+const BACKEND_HOST = config.backendHost || 'localhost'
+const SIGNAL_PORT = config.signalPort || 3012
+
+export interface MessagingServiceOptions {
+  /** Called once the service is ready for connection and knows its peer identifier */
+  onOpen: (myId: string) => void
+  /** Called once connection with a peer has been successfully established */
+  onConnected: (to: string) => void
+  /** Called whenever a message is received */
+  onMessage: (e: MessageEvent) => void
+}
+
+/**
+ * A point to point messaging service.
+ * Will allow you to open a duplex data channel to or from another peer.
+ */
 export default class MessagingService {
   private sock: WebSocket
   private conn: RTCPeerConnection
   private id?: string
   private connectingTo?: string
   private dataChannel?: RTCDataChannel
-  private receiveMessage: (e: MessageEvent) => void = () => {}
+  private onMessage: (e: MessageEvent) => void = () => {}
   private onConnected: (to: string) => void = () => {}
   private onOpen: (myId: string) => void = () => {}
 
+  /**
+   * Create a new service.
+   * @param {MessagingServiceOptions} __namedParameters - The service configuration
+   */
   public constructor({
-    receiveMessage,
+    onMessage,
     onConnected,
     onOpen,
-  }: {
-    receiveMessage: (e: MessageEvent) => void
-    onConnected: (to: string) => void
-    onOpen: (myId: string) => void
-  }) {
+  }: MessagingServiceOptions) {
     this.conn = new RTCPeerConnection({
-      iceServers: [{ urls: `stun:${BACKEND_ADDRESS}` }],
+      iceServers: [{ urls: `stun:${BACKEND_HOST}` }],
     })
-    this.sock = new WebSocket(`ws://${BACKEND_ADDRESS}:${SIGNAL_PORT}`)
-    if (receiveMessage) {
-      this.receiveMessage = receiveMessage
+    this.sock = new WebSocket(`ws://${BACKEND_HOST}:${SIGNAL_PORT}`)
+    if (onMessage) {
+      this.onMessage = onMessage
     }
     if (onConnected) {
       this.onConnected = onConnected
@@ -45,7 +60,7 @@ export default class MessagingService {
     }
     this.conn.ondatachannel = (e: RTCDataChannelEvent) => {
       const dataChannel = e.channel
-      dataChannel.onmessage = this.receiveMessage
+      dataChannel.onmessage = this.onMessage
       dataChannel.onopen = () => {
         if (this.onConnected) {
           this.onConnected(this.connectingTo!)
@@ -98,11 +113,15 @@ export default class MessagingService {
       }
     }
   }
+  /**
+   * Connect to a peer.
+   * @param target - The peer identifier of the connection target
+   */
   public async connect(target: string) {
     this.connectingTo = target
 
     const dataChannel = this.conn.createDataChannel('DATACHANNEL')
-    dataChannel.onmessage = this.receiveMessage
+    dataChannel.onmessage = this.onMessage
     dataChannel.onopen = () => {
       if (this.onConnected) {
         this.onConnected(this.connectingTo!)
@@ -120,6 +139,11 @@ export default class MessagingService {
     )
   }
 
+  /**
+   * Send a message to the connected peer.
+   * This will throw if called without establishing a connection.
+   * @param message - The message to send.
+   */
   public async send(message: string) {
     if (!this.dataChannel) {
       throw new Error('Data Channel not up')

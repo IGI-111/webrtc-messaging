@@ -22,7 +22,7 @@ class App extends Component<
 
   async componentDidMount() {
     const service = new MessagingService({
-      receiveMessage: this.receiveMessage,
+      onMessage: this.receiveMessage,
       onConnected: (connectedTo: string) => this.setState({ connectedTo }),
       onOpen: (id: string) => this.setState({ id }),
     })
@@ -58,8 +58,12 @@ class App extends Component<
 
   render() {
     const { id, connectedTo, messageHistory, service } = this.state
-    if (!service) {
-      return <div />
+    if (!service || !id) {
+      return (
+        <div className="App">
+          Contacting signal server...
+        </div>
+      )
     }
 
     if (connectedTo) {
@@ -74,7 +78,7 @@ class App extends Component<
           />
         </div>
       )
-    } else {
+    }
       return (
         <div className="App">
           {id && <span>You are {id}</span>}
@@ -91,7 +95,6 @@ class App extends Component<
           </div>
         </div>
       )
-    }
   }
 }
 
